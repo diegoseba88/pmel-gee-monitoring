@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: pmel-monitoring
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn MONITORING:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: EE_SERVICE_ACCOUNT
+        sync: false
+      - key: EE_PRIVATE_KEY_JSON
+        sync: false
+      - key: EE_S2_COLLECTION
+        value: COPERNICUS/S2_SR_HARMONIZED
