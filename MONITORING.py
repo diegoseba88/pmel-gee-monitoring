@@ -16,8 +16,11 @@ Flask backend:
 import os
 import json
 from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Earth Engine setup
 EE_AVAILABLE = False
@@ -618,9 +621,22 @@ def timeseries():
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
 
-if __name__ == '__main__':
-    # Ensure the monitor HTML exists next to this script
+# --- ADD THIS: Ensure HTML exists on import ---
+# This runs immediately when Gunicorn loads the file
+if not os.path.exists(os.path.join(os.path.dirname(__file__), 'monitor.html')):
     write_monitor_html()
+# ----------------------------------------------
+
+if __name__ == '__main__':
+    # You can keep this for local testing, or remove the write call since we did it above
+    # write_monitor_html() 
+    
     print('Wrote monitor.html next to MONITORING.py')
-    print('Run: python MONITORING.py to start the Flask backend on http://127.0.0.1:5000')
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    
+    # Use environment variable for host/port (Render compatibility)
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
+    app.run(debug=debug, host='0.0.0.0', port=port)
+
+
