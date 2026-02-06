@@ -616,8 +616,14 @@ def timeseries():
         dates = stats_coll.aggregate_array('date').getInfo()
         values = stats_coll.aggregate_array('mean_ndvi').getInfo()
 
+        raw_v = [v if v is not None else 0 for v in values]
+        smoothed = []
+        for i in range(len(raw_v)):
+          window = raw_v[max(0, i-1) : min(len(raw_v), i+2)]
+          smoothed.append(sum(window) / len(window))
+
         # Zip them together
-        series = [{'date': d, 'value': v} for d, v in zip(dates, values)]
+        series = [{'date': d, 'value': v, 'smooth': s} for d, v, s in zip(dates, values, smoothed)]
 
         return jsonify({'status': 'ok', 'series': series})
     except Exception as e:
@@ -641,6 +647,7 @@ if __name__ == '__main__':
     debug = os.environ.get('FLASK_ENV') != 'production'
     
     app.run(debug=debug, host='0.0.0.0', port=port)
+
 
 
 
