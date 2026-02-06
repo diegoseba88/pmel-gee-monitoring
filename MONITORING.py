@@ -106,6 +106,7 @@ def tiles():
     start = data.get('start')
     end = data.get('end')
     cloud_threshold = int(data.get('cloud_threshold', 20))  # Default 20% cloud cover
+    buffer_meters = int(data.get('buffer', 500))
 
     if not geom:
         return jsonify({'status': 'error', 'error': 'No geometry provided'}), 400
@@ -113,6 +114,8 @@ def tiles():
     try:
         # Build ee.Geometry from GeoJSON
         geometry = ee.Geometry(geom)
+
+        clip_geometry = geometry.buffer(buffer_meters).bounds()
 
         coll_id = os.environ.get('EE_S2_COLLECTION', 'COPERNICUS/S2_SR_HARMONIZED')
         coll = ee.ImageCollection(coll_id)
@@ -127,10 +130,10 @@ def tiles():
         if layer.upper() == 'NDVI':
             img = coll.select(['B8', 'B4']).median().normalizedDifference(['B8', 'B4'])
             viz = {'min': 0, 'max': 1, 'palette': ['white', 'green']}
-            img_viz = img.visualize(**viz)
+            img_viz = img.clip(clip_geometry).visualize(**viz)
         else:
             img = coll.select(['B4', 'B3', 'B2']).median()
-            img_viz = img.visualize(min=0, max=3000)
+            img_viz = img.clip(clip_geometry).visualize(min=0, max=3000)
 
         try:
             mapid = img_viz.getMapId()
@@ -638,5 +641,6 @@ if __name__ == '__main__':
     debug = os.environ.get('FLASK_ENV') != 'production'
     
     app.run(debug=debug, host='0.0.0.0', port=port)
+
 
 
